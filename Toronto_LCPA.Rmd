@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = 'center')
 knitr::include_graphics("Leaflet_map_with_inset.png")
 ```
 
-# Install and Load Required Packages
+## Install and Load Required Packages
 
 ```{r installations, echo=FALSE}
 # install.packages("leaflet")
@@ -87,21 +87,21 @@ library(stplanr)
 library(forecast)
 ```
 
-# Load all the datasets required to execute this project
-```{r Loading the datasets, message=FALSE, warning=FALSE, include=FALSE}
+## Load all the datasets required to execute this project
+```{r Loading the datasets, message=FALSE, warning=FALSE, include=TRUE}
 load("Final_Proj_data.RData")
 ```
 
 ## Fetch the Toronto Center Boundary
-```{r Toronto Center Boundary from OSM, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-# Define the bounding box (bbox) with specified coordinates and CRS (Coordinate Reference System)
+```{r Toronto Center Boundary from OSM, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+# Define the bounding box with specified coordinates and CRS
 bbox = st_bbox(c(xmin = -79.38884,
                  xmax = -79.34936,
                  ymax = 43.67320,
                  ymin = 43.64576), 
                crs = st_crs(4326))
 
-# Now we query OpenStreetMap (OSM) data using the bounding box for admin level 9 and its administrative boundaries
+# Now we query OpenStreetMap data using the bounding box for admin level 9 and its administrative boundaries
 wards = opq(bbox = bbox) |>
   add_osm_feature(key = "admin_level", value = "9") |>
   add_osm_feature(key = "boundary", value = "administrative") |>
@@ -117,7 +117,7 @@ toronto_center_shp = "toronto_center_boundary.shp"
 # Write the filtered boundary to a shapefile
 st_write(toronto_center, toronto_center_shp, append = FALSE)
 
-# Read the shapefile back into R as an sf (simple feature) object
+# Read the shapefile back into R as an sf object
 toronto_center_traffic_polygon = st_read(toronto_center_shp)
 
 ```
@@ -166,11 +166,11 @@ osm_road_data = opq(bbox = tc_bbox) |>
   add_osm_feature(key = 'highway') |>
   osmdata_sf()
 
-# Extracting osm_lines (linestrings) for road network
+# Extracting linestrings for road network
 road_network = osm_road_data$osm_lines
 
 # Filtering road network to keep primary, 
-#secondary, tertiary, and residential roads
+# secondary, tertiary, and residential roads
 relevant_road_types = c('primary', 'secondary', 'tertiary', 'residential')
 filtered_road_network = road_network |>
   filter(highway %in% relevant_road_types)
@@ -184,7 +184,7 @@ cropped_road_network = st_transform(cropped_road_network,
 ```
 
 ```{r, fig.cap= "Toronto Centre Road Network with an Inset map"}
-# Plotting the main map (Toronto Center boundary with cropped road network)
+# Plotting the main map
 main_map = tm_shape(toronto_center_traffic_polygon) +
   tm_borders(col = "black", lwd = 2) +
   tm_shape(cropped_road_network) +
@@ -201,14 +201,13 @@ main_map = tm_shape(toronto_center_traffic_polygon) +
             legend.width = 0.4,
             legend.height = 0.3)
 
-# Plotting the inset map (Toronto map with boundary of Toronto Center)
+# Plotting the inset map
 inset_map = tm_shape(toronto_raster) +
   tm_rgb() +
   tm_shape(toronto_center_traffic_polygon) +
   tm_borders(col = "red", lwd = 1) +
   tm_layout()
 
-# Print both maps together
 main_map
 print(inset_map, vp = viewport(0.85, 0.85, width = 0.25, height = 0.30))
 
@@ -222,7 +221,7 @@ A raster dataset representing traffic congestion levels (1 to 4) for every stree
 
 google_key = Sys.getenv("google_maps_api_key")
 
-#Creating the raster layer of traffic congestion
+# Creating the raster layer of traffic congestion
 congestion_raster = gt_make_raster_from_polygon(polygon =
                                           toronto_center_traffic_polygon,
                                           zoom = 17,
@@ -235,20 +234,17 @@ congestion_raster = gt_make_raster_from_polygon(polygon =
 
 
 ```{r}
-
-library(raster)  # Ensure the raster package is loaded
-library(viridis)
 # COnverting spatraster and polygons to obtain better visualizations
 congestion_spatraster = rast(congestion_raster) # Converting to spatraster
 
-#Converting to polygons
+# Converting to polygons
 congestion_polygons = as.polygons(congestion_spatraster, dissolve = TRUE)
 
-# Convert the raster layer into a dataframe, including spatial coordinates
+# Convert the raster layer into a dataframe
 congestion_df = rasterToPoints(congestion_raster, spatial = TRUE) |>
     as.data.frame()
 
-# Rename the columns of the dataframe to 'congestion_level', 'x', and 'y'
+# Rename the columns
 names(congestion_df) = c("congestion_level", "x", "y")
 
 # Convert the congestion dataframe into an sf object
@@ -267,13 +263,7 @@ plot(congestion_sf,
      xlab = "Longitude", 
      ylab = "Latitude",
      palette =  congestion_pal)  # Using terrain colors for better visual distinction of values
-
-
 ```
-
-
-
-
 
 ## Traffic Signal Data:
 
@@ -293,7 +283,7 @@ We convert the large RasterLayer into a SpatRaster for easier manipulation. Furt
 
 ```{r Rasterlayer to Spatraster and polygons, message=FALSE, warning=FALSE, include=FALSE}
 congestion_spatraster = rast(congestion_raster) # Converting to spatraster
-#Converting to polygons
+# Converting to polygons
 congestion_polygons = as.polygons(congestion_spatraster, dissolve = TRUE)
 ```
 
@@ -306,9 +296,9 @@ traffic_light_locations = read.csv("Traffic_lights.csv")
 ```
 
 ```{r Traffic Signal Location Data, message=FALSE, warning=FALSE}
-# Convert the traffic light locations dataframe to an sf (simple feature) object
+# Convert the traffic light locations dataframe to an sf object
 # using the specified Longitude and Latitude columns for coordinates
-# and set the CRS (Coordinate Reference System) to 4326
+# and set the CRS to 4326
 traffic_lights_sf = st_as_sf(traffic_light_locations, 
                             coords = c("Longitude", "Latitude"), 
                             crs = 4326)
@@ -346,7 +336,6 @@ speed_limits_filtered_tc = speed_limits_filtered[
                             op = st_within
                             ]
 
-# Convert the 'maxspeed' column from character (or factor) to numeric format
 speed_limits_filtered_tc$maxspeed = as.numeric(
                                     speed_limits_filtered_tc$maxspeed
                                     )
@@ -375,22 +364,20 @@ speed_limits_filtered_tc = st_transform(
 Now, we perform a sequence of operations to calculate congestion levels for road segments. First, we convert a raster layer representing congestion into a dataframe with spatial coordinates. The road network is then segmented into smaller segments of 50 meters and each segment is assigned a unique ID. The road segments are further broken down into individual points, and the nearest congestion values are matched to these points based on proximity. The congestion data is then joined to the road points. Finally, the points are grouped back into linestrings, and the mean congestion level is calculated for each road segment, resulting in a dataset of road segments with associated congestion values.
 
 ```{r warning=FALSE, results='hide'}
-# Convert the raster layer into a dataframe, including spatial coordinates
+# Convert the raster layer into a dataframe
 congestion_df = rasterToPoints(congestion_raster, spatial = TRUE) |>
     as.data.frame()
 
-# Rename the columns of the dataframe to 'congestion_level', 'x', and 'y'
 names(congestion_df) = c("congestion_level", "x", "y")
 
 # Convert the congestion dataframe into an sf object
-# using the specified coordinates and CRS of the cropped road network
+# using the CRS of the cropped road network
 congestion_sf = st_as_sf(congestion_df, coords = c("x", "y"), crs = st_crs(cropped_road_network))
 
 # Select only the geometry column from the cropped road network
 roads = cropped_road_network |>
   dplyr::select(geometry)
 
-# Copy the roads geometry into a new sf object
 roads_sf = roads
 
 # Segmentize the roads geometry into smaller segments of 50 meters in length
@@ -399,7 +386,7 @@ segmented_roads = line_segment(roads_sf, segment_length = 50, use_rsgeo = FALSE)
 roads = segmented_roads |>
   dplyr::select(geometry)
 
-# Add a road_id column to uniquely identify each road segment
+# Add a road id column to uniquely identify each road segment
 roads = segmented_roads |>
   mutate(road_id = row_number())
 
@@ -456,15 +443,14 @@ roads_linestrings = st_join(roads_linestrings, speed_limits_filtered_tc,
 
 # Join the traffic signals data to assign traffic delay as a cost to
 # line segments near traffic signal 
-roads_signals <- roads_linestrings %>%
-  st_join(traffic_lights_toronto_center, join = st_nearest_feature) %>%
+roads_signals = roads_linestrings %>%
+  st_join(traffic_lights_toronto_center, join = st_nearest_feature)  %>%
   mutate(distance = st_distance(., traffic_lights_toronto_center[
-    st_nearest_feature(., traffic_lights_toronto_center),], by_element = TRUE)) %>%
-  filter(distance <= units::set_units(10, "m"))
-
+    st_nearest_feature(., traffic_lights_toronto_center),], by_element = TRUE))  %>%
+  filter(distance <= units::set_units(10, "m")) # filter to keep only those within 10 meters
 
 # Assign traffic delay of 30 seconds at traffic signals
-roads_linestrings = roads_linestrings %>%
+roads_linestrings = roads_linestrings  %>%
   mutate(traffic_delay = ifelse(road_id %in% roads_signals$road_id, 30, 0))
 
 # Convert roads_linestrings to an sfnetwork and perform transformations
@@ -476,8 +462,8 @@ network = as_sfnetwork(roads_linestrings, directed = FALSE) |>
     weight = edge_length_num/((maxspeed*5/18)) + traffic_delay) 
 
 # Define start and end points using coordinates
-start_point = st_point(c(-79.36884, 43.65576))
-end_point = st_point(c(-79.36936, 43.66320))
+start_point = st_point(c(-79.37884, 43.65576))
+end_point = st_point(c(-79.37936, 43.66320))
 
 # Create sf objects transform them to projected CRS
 start_sf = st_sf(geometry = st_sfc(start_point), crs = "EPSG:4326") |> 
@@ -506,7 +492,7 @@ all_node_coords = st_coordinates(activate(network, "nodes"))
 node_coords = st_coordinates(activate(network, "nodes") |>
                                slice(node_path))
 
-# Get all node indices using row numbers
+# Get all node indices
 all_node_indices = seq_len(nrow(all_node_coords))
 
 
@@ -520,18 +506,12 @@ plot(network, col = "grey")
 plot(slice(activate(network, "nodes"), node_path), col = "red", add = TRUE)
 
 # Add title
-title(main = "LCPA without congestion")
+title(main = "Road Network Graph")
 
 # Add scalebar
 scalebar(d = 1000, xy = c(678700.0, 4844417), type = "line", divs = 2, 
          units = "m", below = "Scale")
 
-
-# Add labels for all nodes
-#text(all_node_coords[,1], all_node_coords[,2], labels = all_node_indices, pos = 4, cex = 0.3, col = "blue")
-
-# Add labels for the nodes in the path
-#text(node_coords[,1], node_coords[,2], labels = node_path, pos = 4, cex = 0.4, col = "red")
 par(oldpar)
 ```
 
@@ -549,8 +529,8 @@ network1 = as_sfnetwork(roads_linestrings, directed = FALSE) |>
 
 
 # Define start and end points using coordinates
-start_point = st_point(c(-79.36884, 43.65576))
-end_point = st_point(c(-79.36936, 43.66320))
+start_point = st_point(c(-79.37884, 43.65576))
+end_point = st_point(c(-79.37936, 43.66320))
 
 # Create sf objects transform them to projected CRS
 start_sf = st_sf(geometry = st_sfc(start_point), crs = "EPSG:4326") |> 
@@ -579,10 +559,7 @@ all_node_coords = st_coordinates(activate(network1, "nodes"))
 node_coords = st_coordinates(activate(network1, "nodes") |>
                                slice(node_path))
 
-# Get all node indices using row numbers
 all_node_indices = seq_len(nrow(all_node_coords))
-
-
 ```
 
 ```{r warning=FALSE}
@@ -593,49 +570,26 @@ plot(network1, col = "grey")
 plot(slice(activate(network1, "nodes"), node_path), col = "red", add = TRUE)
 
 # Add title
-title(main = "LCPA Considering Congestion")
+title(main = "Road Network Graph")
 
 # Add scalebar
 scalebar(d = 1000, xy = c(678700.0, 4844417), type = "line", divs = 2, 
          units = "m", below = "Scale")
 
-
-# Add labels for all nodes
-#text(all_node_coords[,1], all_node_coords[,2], labels = all_node_indices, pos = 4, cex = 0.3, col = "blue")
-
-# Add labels for the nodes in the path
-#text(node_coords[,1], node_coords[,2], labels = node_path, pos = 4, cex = 0.4, col = "red")
 par(oldpar)
 ```
-
-```{r}
-# Convert the network edges to a data frame for plotting
-edges_df <- network1 |>
-  activate("edges") |>
-  as_tibble()
-
-# Plot the network with color coding based on weights
-ggplot(data = edges_df) +
-  geom_sf(aes(geometry = geometry, color = weight), size = 2) +
-  scale_color_gradient(low = "green", high = "red", name = "Weight") +
-  labs(title = "Traffic Congestion Network", x = "Longitude", y = "Latitude") +
-  theme_minimal()
-```
-
-
-
 
 # Extracting congestion data for 1 week's time span
 
 ```{r}
-# List all TIFF files in the directory
+# Read ll files in the directory
 file_paths = list.files(path = "congestion_data_temporal", 
                          pattern = "\\.tif$", full.names = TRUE)
 
 # Load each file as a RasterLayer
 raster_layers = lapply(file_paths, raster)
 
-# Names including timestamps
+# Get names including timestamps
 timestamps = sub("congestion_raster_", "", basename(file_paths))
 timestamps = sub("\\.tif", "", timestamps)
 timestamps = as.POSIXct(timestamps, format = "%Y-%m-%d_%H-%M")
@@ -745,8 +699,6 @@ daily_congestion = congestion_time_series |>
 date_range = seq(min(daily_congestion$date),
                   max(daily_congestion$date), by = "day")
        
-       
-# Plotting the aggregated data with corrected syntax
 ggplot(daily_congestion, aes(x = date, y = congestion_value)) +
   geom_line(color = "blue", size = 1) +  
   geom_smooth(method = "loess", color = "red", se = FALSE) +
@@ -759,13 +711,39 @@ ggplot(daily_congestion, aes(x = date, y = congestion_value)) +
 ggsave("daily_congestion_plot.png", width = 10, height = 6)
 ```
 
+```{r}
+# Plotting the aggregated data with a legend
+
+ggplot(daily_congestion, aes(x = date, y = congestion_value)) +
+
+  geom_line(aes(color = "Daily Mean Congestion"), size = 1) +  
+
+  geom_smooth(aes(color = "Trend Curve"), method = "loess", se = FALSE) +
+
+  labs(title = "Daily Congestion Time Series",
+
+       subtitle = "Aggregated daily mean congestion from 2024-07-16 to 2024-07-22",
+
+       color = "Legend") +  # Label for the legend
+
+  scale_x_date(breaks = date_range, labels = scales::date_format("%Y-%m-%d")) +
+
+  scale_color_manual(values = c("Daily Mean Congestion" = "blue", 
+
+                                "Trend Curve" = "red")) +  # Colors for the legend
+
+  theme_minimal() +
+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
 # Create time id for each date
 ```{r}
 # Arrange the data by date
 congestion_time_series = congestion_time_series |>
   arrange(date)
 
-# Create time_id for each date
+# Create time id for each date
 congestion_time_series$time_id = match(congestion_time_series$date, 
                                         unique(congestion_time_series$date)) - 1
 
@@ -792,11 +770,10 @@ daily_congestion = congestion_time_series |>
   mutate(congestion_value = mean_congestion) |>
   select(-mean_congestion)
 
-
 # Store forecasts in a list
 forecasts = list()
 
-# Loop through each unique road_id
+# Loop through each unique road_id and forecast
 for (road in unique(daily_congestion$road_id)) {
   # Filter data for the current road
   road_data = filter(daily_congestion, road_id == road)
@@ -857,6 +834,35 @@ ggplot(time_series, aes(x = time_id, y = congestion_value,
 
 ```
 
+
+```{r}
+# Create the Time series plot with a vertical line at time_id 6
+
+ggplot(time_series, aes(x = time_id, y = congestion_value, 
+
+                        color = congestion_value)) +
+
+  geom_point() +  
+
+  geom_line() +  
+
+  geom_vline(xintercept = 6, linetype = "dotted", color = "red", size = 1) +  # Add vertical line at time_id 6
+
+  labs(title = "Forecasted Time Series",
+
+       x = "Time ID",
+
+       y = "Mean Congestion",
+
+       color = "Mean Congestion") +  
+
+  scale_color_viridis_c() + 
+
+  scale_x_continuous(breaks = unique(time_series$time_id)) +  
+
+  expand_limits(y = 1)
+```
+
 # LCPA after Forecasting
 
 ```{r}
@@ -887,7 +893,7 @@ roads_signals = roads_linestrings  %>%
   filter(distance <= units::set_units(10, "m"))
 
 # Assign traffic delay of 30 seconds at traffic signals
-forecast_df = forecast_df %>%
+forecast_df = forecast_df  %>%
   mutate(traffic_delay = ifelse(road_id %in% roads_signals, 30, 0))
 
 
@@ -900,7 +906,7 @@ network1 = as_sfnetwork(forecast_df, directed = FALSE) |>
   mutate(weight = edge_length_num/((maxspeed*5/18) * (1-(congestion_value.x-1)*0.25)) + traffic_delay)
 
 
-# Set the start and end cordinates
+# Define start and end points using coordinates
 start_point = st_point(c(-79.36884, 43.65576))
 end_point = st_point(c(-79.36936, 43.66320))
 
@@ -931,33 +937,23 @@ all_node_coords = st_coordinates(activate(network1, "nodes"))
 # Extract the coordinates of the nodes in the path
 node_coords = st_coordinates(activate(network1, "nodes") |> slice(node_path))
 
-# Get all node indices (using row numbers)
+# Get all node indices
 all_node_indices = seq_len(nrow(all_node_coords))
 
 ```
 
 
 ```{r}
-# Prepare to plot the network and the path
 oldpar = par(no.readonly = TRUE)
 par(mar = c(1,1,1,1))
 plot(network1, col = "grey")
 plot(slice(activate(network1, "nodes"), node_path), col = "red", add = TRUE)
 
-# Add title
 title(main = "Forcasted Road Network Graph")
 
-# Add scalebar
 scalebar(d = 1000, xy = c(678700.0, 4844417), type = "line", divs = 2, units = "m", below = "Scale")
 
-
-# Add labels for all nodes
-#text(all_node_coords[,1], all_node_coords[,2], labels = all_node_indices, pos = 4, cex = 0.3, col = "blue")
-
-# Add labels for the nodes in the path
-#text(node_coords[,1], node_coords[,2], labels = node_path, pos = 4, cex = 0.4, col = "red")
 par(oldpar)
-
 ```
 
 
