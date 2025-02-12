@@ -8,7 +8,7 @@ This repository is dedicated to the "Route Optimization in Downtown Toronto usin
 
 Toronto is notorious for its dense traffic, frequently ranking as one of the most congested cities in North America. The congestion not only leads to longer travel times but also contributes to increased carbon emissions and decreased quality of life for city residents. This project leverages geographical data analysis and route optimization techniques to offer practical solutions to these issues.
 
-### Objectives:
+## Objectives:
 
 * Efficiency: Utilize Least Cost Path Analysis to identify the most efficient travel routes by considering multiple factors such as traffic congestion, speed limits, and traffic signal locations.
 * Accessibility: Make these optimized routes accessible to the public through interactive maps and applications, enabling everyday commuters to navigate the city more easily.
